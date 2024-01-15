@@ -9,9 +9,28 @@ function main() {
 	const renderer = new THREE.WebGLRenderer( { antialias: true, canvas } );
 	RectAreaLightUniformsLib.init();
 
+    let whichBrowser = function() {
+        // Opera 8.0+
+        if ( (!!window.opr && !!opr.addons) || !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0 )
+            return "isOpera";
+
+        // Firefox 1.0+
+        if ( typeof InstallTrigger !== 'undefined' )
+            return "isFirefox";
+
+        if ( !!window.chrome && (!!window.chrome.webstore || !!window.chrome.runtime) )
+            return "isChrome";
+
+        // Edge (based on chromium) detection
+        if ( isChrome && (navigator.userAgent.indexOf("Edg") != -1) )
+            return "isEdgeChromium";
+    }
+
+    let encoding = (whichBrowser() == "isFirefox")?'video/webm':'video/webm;codecs=h264'
+
     // canvas recording
     const canvasStream = canvas.captureStream(60);
-    const mediaRecorder = new MediaRecorder(canvasStream, { mimeType: 'video/webm;codecs=h264', videoBitsPerSecond: 10000000 });
+    const mediaRecorder = new MediaRecorder(canvasStream, { mimeType: encoding, videoBitsPerSecond: 10000000 });
     console.log(mediaRecorder);
     let chunks = [];
     mediaRecorder.ondataavailable = (e) => {
@@ -25,7 +44,7 @@ function main() {
         downloadLink.href = recordedVideoUrl;
         downloadLink.click();
     };
-    mediaRecorder.start();
+    //mediaRecorder.start();
 
 	const fov = 75;
 	const aspect = 2; // the canvas default
@@ -73,6 +92,8 @@ function main() {
 		const mesh = new THREE.Mesh( planeGeo, planeMat );
 		mesh.rotation.x = Math.PI * - .5;
         mesh.position.x = repeats;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
 		scene.add( mesh );
 	}
 
@@ -118,8 +139,17 @@ function main() {
 			camera.updateProjectionMatrix();
 		}
 
-        camera.position.x += 0.2;
-        //console.log(camera.position);
+        console.log(camera.position);
+        console.log(camera.far);
+        console.log(planeSize);
+        if(camera.position.x + camera.far >= planeSize) {
+
+        }
+        if(camera.position.x >= planeSize) {
+            return;
+        } else {
+            camera.position.x += 0.2;
+        }
         if(camera.position.x >= planeSize && mediaRecorder.state == "recording"){
             console.log(mediaRecorder.state);
             mediaRecorder.stop();
